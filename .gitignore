@@ -1,0 +1,7 @@
+# Default
+*~
+.DS_Store
+
+# Rust
+target/
+main
