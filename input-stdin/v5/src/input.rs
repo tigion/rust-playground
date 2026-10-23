@@ -11,7 +11,7 @@ pub fn read_str(prompt: &str) -> io::Result<String> {
         return Err(io::Error::from(io::ErrorKind::UnexpectedEof));
     }
 
-    Ok(input.trim().to_string())
+    Ok(input.trim().to_owned())
 }
 
 pub fn read_i32(prompt: &str) -> io::Result<i32> {
