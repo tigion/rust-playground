@@ -51,6 +51,7 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
 fn main() -> io::Result<()> {
     let opts = ClockOptions {
         size: ClockSize::Wide,
+        show_date: true,
     };
 
     if std::env::args().any(|arg| arg == "--print") {

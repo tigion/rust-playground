@@ -42,10 +42,20 @@ impl ClockSize {
 #[derive(Clone, Copy, Default)]
 pub struct ClockOptions {
     pub size: ClockSize,
+    pub show_date: bool,
 }
 
 fn format_time(time: &DateTime<Local>) -> String {
     time.format("%H:%M:%S").to_string()
+}
+
+fn format_date(time: &DateTime<Local>) -> String {
+    time.format("%d.%m.%Y").to_string()
+}
+
+fn center_line(text: &str, width: usize) -> String {
+    let padding = width.saturating_sub(text.chars().count()) / 2;
+    format!("{}{text}", " ".repeat(padding))
 }
 
 pub fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2]) -> Vec<String> {
@@ -79,8 +89,24 @@ pub fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2]) -> Vec<String
     lines
 }
 
+fn render_date(time: &DateTime<Local>, width: usize) -> String {
+    let date_str = format_date(time);
+    center_line(&date_str, width)
+}
+
+fn lines_width(lines: &[String]) -> usize {
+    lines.iter().map(|l| l.chars().count()).max().unwrap_or(0)
+}
+
 pub fn render_clock(now: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
     let pixel_chars = opts.size.pixel_chars();
 
-    render_time(&now, pixel_chars)
+    let mut lines = render_time(&now, pixel_chars);
+
+    if opts.show_date {
+        lines.push(String::new());
+        lines.push(render_date(&now, lines_width(&lines)));
+    }
+
+    lines
 }
