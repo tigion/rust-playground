@@ -14,7 +14,7 @@ use crossterm::{
 // use std::time::Duration;
 use std::{io, time::Duration};
 
-use crate::terminal::{TerminalGuard, draw};
+use crate::terminal::{TerminalGuard, draw, draw_centered};
 
 fn print_clock(size: ClockSize) {
     let time_string = format_time(&Local::now());
@@ -32,7 +32,8 @@ fn run_clock(size: ClockSize) -> io::Result<()> {
         let now = Local::now();
         let time_string = format_time(&now);
         let rendered_clock = render_clock(&time_string, pixel_chars);
-        draw(&mut out, &rendered_clock)?;
+        draw_centered(&mut out, &rendered_clock)?;
+        // draw(&mut out, &rendered_clock)?;
 
         let ms = u64::from(now.timestamp_subsec_millis() % 1000);
         if event::poll(Duration::from_millis(1000 - ms))? {
