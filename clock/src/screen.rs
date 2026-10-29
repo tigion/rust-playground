@@ -1,4 +1,4 @@
-// terminal.rs
+// screen.rs
 
 use crossterm::{
     cursor::{Hide, MoveTo, Show},

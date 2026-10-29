@@ -1,7 +1,7 @@
 // main.rs
 
 mod clock;
-mod terminal;
+mod screen;
 
 use chrono::Local;
 use clock::{ClockOptions, ClockSize, render_clock};
@@ -10,8 +10,8 @@ use crossterm::{
     execute,
     terminal::{Clear, ClearType},
 };
+use screen::{TerminalGuard, draw_centered};
 use std::{io, time::Duration};
-use terminal::{TerminalGuard, draw_centered};
 
 fn print_clock(opts: ClockOptions) {
     let now = Local::now();
