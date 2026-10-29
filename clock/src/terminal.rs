@@ -26,13 +26,6 @@ impl Drop for TerminalGuard {
     }
 }
 
-pub fn draw(out: &mut impl Write, lines: &[String]) -> io::Result<()> {
-    for (i, line) in lines.iter().enumerate() {
-        queue!(out, MoveTo(0, i as u16), Print(line))?;
-    }
-    out.flush()
-}
-
 pub fn draw_centered(out: &mut impl Write, lines: &[String]) -> io::Result<()> {
     let (cols, rows) = terminal::size()?;
 

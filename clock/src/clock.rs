@@ -23,9 +23,10 @@ const COLON: [u8; 5] = [0, 1, 0, 1, 0];
 const PIXEL_CHARS_NARROW: [&str; 2] = [" ", "█"];
 const PIXEL_CHARS_WIDE: [&str; 2] = ["  ", "██"];
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub enum ClockSize {
     Narrow,
+    #[default]
     Wide,
 }
 
@@ -38,18 +39,24 @@ impl ClockSize {
     }
 }
 
-pub fn format_time(time: &DateTime<Local>) -> String {
+#[derive(Clone, Copy, Default)]
+pub struct ClockOptions {
+    pub size: ClockSize,
+}
+
+fn format_time(time: &DateTime<Local>) -> String {
     time.format("%H:%M:%S").to_string()
 }
 
-pub fn render_clock(time_str: &str, pixel_chars: [&str; 2]) -> Vec<String> {
+pub fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2]) -> Vec<String> {
+    let time_str = format_time(time);
     let mut lines = Vec::with_capacity(DIGIT_HEIGHT);
 
-    // for time_char in time_str.chars() {
     for row in 0..DIGIT_HEIGHT {
         let mut line = String::new();
 
         for (index, ch) in time_str.chars().enumerate() {
+            // Add a space between characters
             if index > 0 {
                 line.push_str(pixel_chars[0]);
             }
@@ -70,4 +77,10 @@ pub fn render_clock(time_str: &str, pixel_chars: [&str; 2]) -> Vec<String> {
     }
 
     lines
+}
+
+pub fn render_clock(now: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
+    let pixel_chars = opts.size.pixel_chars();
+
+    render_time(&now, pixel_chars)
 }
