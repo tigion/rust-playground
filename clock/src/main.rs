@@ -18,9 +18,9 @@ use crate::terminal::{TerminalGuard, draw};
 
 fn print_clock(size: ClockSize) {
     let time_string = format_time(&Local::now());
-    let rendered_time = render_clock(&time_string, size.pixel_chars());
+    let lines = render_clock(&time_string, size.pixel_chars());
 
-    println!("{rendered_time}");
+    println!("{}", lines.join("\n"));
 }
 
 fn run_clock(size: ClockSize) -> io::Result<()> {

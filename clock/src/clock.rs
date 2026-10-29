@@ -42,36 +42,32 @@ pub fn format_time(time: &DateTime<Local>) -> String {
     time.format("%H:%M:%S").to_string()
 }
 
-pub fn render_clock(time_str: &str, pixel_chars: [&str; 2]) -> String {
-    let mut output = String::new();
+pub fn render_clock(time_str: &str, pixel_chars: [&str; 2]) -> Vec<String> {
+    let mut lines = Vec::with_capacity(DIGIT_HEIGHT);
 
+    // for time_char in time_str.chars() {
     for row in 0..DIGIT_HEIGHT {
-        // Add a newline before each row except the first one
-        if row > 0 {
-            output.push('\n');
-        }
+        let mut line = String::new();
 
-        // for time_char in time_str.chars() {
-        for (index, time_char) in time_str.chars().enumerate() {
-            // Add a space between characters
+        for (index, ch) in time_str.chars().enumerate() {
             if index > 0 {
-                output.push_str(pixel_chars[0]);
+                line.push_str(pixel_chars[0]);
             }
 
             // Add the linewise pixel representation for the character
-            if let Some(digit) = time_char.to_digit(10) {
-                let digit = digit as usize;
-
+            if let Some(digit) = ch.to_digit(10) {
                 for col in 0..DIGIT_WIDTH {
-                    output.push_str(pixel_chars[DIGITS[digit][row][col] as usize]);
+                    line.push_str(pixel_chars[DIGITS[digit as usize][row][col] as usize]);
                 }
-            } else if time_char == ':' {
-                output.push_str(pixel_chars[COLON[row] as usize]);
+            } else if ch == ':' {
+                line.push_str(pixel_chars[COLON[row] as usize]);
             } else {
-                unreachable!("unsupported character in time string: {time_char:?}");
+                unreachable!("unsupported character in time string: {ch:?}");
             }
         }
+
+        lines.push(line);
     }
 
-    output
+    lines
 }

@@ -26,9 +26,9 @@ impl Drop for TerminalGuard {
     }
 }
 
-pub fn draw(out: &mut impl Write, rendered: &str) -> io::Result<()> {
-    for (row, line) in rendered.lines().enumerate() {
-        queue!(out, MoveTo(0, row as u16), Print(line))?;
+pub fn draw(out: &mut impl Write, lines: &[String]) -> io::Result<()> {
+    for (i, line) in lines.iter().enumerate() {
+        queue!(out, MoveTo(0, i as u16), Print(line))?;
     }
     out.flush()
 }
