@@ -8,7 +8,7 @@ use clock::{ClockOptions, ClockSize, render_clock};
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
-    terminal::{Clear, ClearType},
+    terminal::{self, Clear, ClearType},
 };
 use screen::{TerminalGuard, draw_centered};
 use std::{io, time::Duration};
@@ -26,7 +26,19 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
 
     loop {
         let now = Local::now();
-        let rendered_clock = render_clock(&now, opts);
+
+        let (cols, _) = terminal::size()?;
+        let frame_opts = ClockOptions {
+            // FIX: Hardcoded threshold for switching to narrow mode
+            size: if cols < 54 {
+                ClockSize::Narrow
+            } else {
+                opts.size
+            },
+            ..opts
+        };
+
+        let rendered_clock = render_clock(&now, frame_opts);
         draw_centered(&mut out, &rendered_clock)?;
 
         let ms = u64::from(now.timestamp_subsec_millis() % 1000);
