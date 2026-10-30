@@ -29,8 +29,10 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
 
         let (cols, _) = terminal::size()?;
         let frame_opts = ClockOptions {
-            // FIX: Hardcoded threshold for switching to narrow mode
-            clock_size: if cols < 54 {
+            // FIX: Hardcoded threshold for switching sizes
+            clock_size: if cols < 27 {
+                ClockSize::Text
+            } else if cols < 54 {
                 ClockSize::Narrow
             } else {
                 opts.clock_size

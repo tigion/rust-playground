@@ -25,16 +25,18 @@ const PIXEL_CHARS_WIDE: [&str; 2] = ["  ", "██"];
 
 #[derive(Clone, Copy, Default)]
 pub enum ClockSize {
+    Text,
     Narrow,
     #[default]
     Wide,
 }
 
 impl ClockSize {
-    pub fn pixel_chars(self) -> [&'static str; 2] {
+    pub fn pixel_chars(self) -> Option<[&'static str; 2]> {
         match self {
-            ClockSize::Narrow => PIXEL_CHARS_NARROW,
-            ClockSize::Wide => PIXEL_CHARS_WIDE,
+            ClockSize::Text => None,
+            ClockSize::Narrow => Some(PIXEL_CHARS_NARROW),
+            ClockSize::Wide => Some(PIXEL_CHARS_WIDE),
         }
     }
 }
@@ -73,21 +75,11 @@ impl ColonBlink {
 #[derive(Clone, Copy, Default)]
 pub struct ClockOptions {
     pub clock_size: ClockSize,
-    pub show_date: bool,
     pub colon_blink: ColonBlink,
 }
 
 fn format_time(time: &DateTime<Local>) -> String {
     time.format("%H:%M:%S").to_string()
-}
-
-fn format_date(time: &DateTime<Local>) -> String {
-    time.format("%d.%m.%Y").to_string()
-}
-
-fn center_line(text: &str, width: usize) -> String {
-    let padding = width.saturating_sub(text.chars().count()) / 2;
-    format!("{}{text}", " ".repeat(padding))
 }
 
 fn colon_visible(time: &DateTime<Local>, colon_blink: ColonBlink) -> bool {
@@ -97,7 +89,11 @@ fn colon_visible(time: &DateTime<Local>, colon_blink: ColonBlink) -> bool {
     }
 }
 
-fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2], colon_visible: bool) -> Vec<String> {
+fn render_pixel_time(
+    time: &DateTime<Local>,
+    pixel_chars: [&str; 2],
+    colon_visible: bool,
+) -> Vec<String> {
     let time_str = format_time(time);
     let mut lines = Vec::with_capacity(DIGIT_HEIGHT);
 
@@ -129,26 +125,25 @@ fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2], colon_visible: bo
     lines
 }
 
-fn render_date(time: &DateTime<Local>, width: usize) -> String {
-    let date_str = format_date(time);
-    center_line(&date_str, width)
+fn render_text_time(time: &DateTime<Local>, colon_visible: bool) -> String {
+    let text = format_time(time);
+    if colon_visible {
+        text
+    } else {
+        text.replace(':', " ")
+    }
 }
 
-fn lines_width(lines: &[String]) -> usize {
-    lines.iter().map(|l| l.chars().count()).max().unwrap_or(0)
+fn render_time(time: &DateTime<Local>, size: ClockSize, colon_visible: bool) -> Vec<String> {
+    match size.pixel_chars() {
+        Some(pixel_chars) => render_pixel_time(time, pixel_chars, colon_visible),
+        None => vec![render_text_time(time, colon_visible)],
+    }
 }
 
 pub fn render_clock(time: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
-    let pixel_chars = opts.clock_size.pixel_chars();
     let colon_visible = colon_visible(time, opts.colon_blink);
-
-    let mut lines = render_time(time, pixel_chars, colon_visible);
-
-    if opts.show_date {
-        let width = lines_width(&lines);
-        lines.push(String::new());
-        lines.push(render_date(time, width));
-    }
+    let lines = render_time(time, opts.clock_size, colon_visible);
 
     lines
 }

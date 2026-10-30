@@ -26,11 +26,15 @@ impl Drop for TerminalGuard {
     }
 }
 
+fn lines_width(lines: &[String]) -> usize {
+    lines.iter().map(|l| l.chars().count()).max().unwrap_or(0)
+}
+
 pub fn draw_centered(out: &mut impl Write, lines: &[String]) -> io::Result<()> {
     let (cols, rows) = terminal::size()?;
 
     let height = lines.len() as u16; // <= rows, fits into u16
-    let width = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0) as u16; // <= cols, fits into u16
+    let width = lines_width(lines) as u16; // <= cols, fits into u16
 
     let x = cols.saturating_sub(width) / 2;
     let y = rows.saturating_sub(height) / 2;
