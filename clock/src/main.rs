@@ -20,6 +20,19 @@ fn print_clock(opts: ClockOptions) {
     println!("{}", lines.join("\n"));
 }
 
+// TODO: Needs optimization
+fn fit_clock_size(cols: u16, opts: ClockOptions) -> ClockSize {
+    let cols = usize::from(cols);
+    let fitted = if cols < clock::clock_size_width(ClockSize::Narrow, opts.show_seconds) {
+        ClockSize::Text
+    } else if cols < clock::clock_size_width(ClockSize::Wide, opts.show_seconds) {
+        ClockSize::Narrow
+    } else {
+        ClockSize::Wide
+    };
+    fitted.min(opts.clock_size)
+}
+
 fn run_clock(opts: ClockOptions) -> io::Result<()> {
     let _guard = TerminalGuard::new()?;
     let mut out = io::stdout();
@@ -29,14 +42,7 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
 
         let (cols, _) = terminal::size()?;
         let frame_opts = ClockOptions {
-            // FIX: Hardcoded threshold for switching sizes
-            clock_size: if cols < 27 {
-                ClockSize::Text
-            } else if cols < 54 {
-                ClockSize::Narrow
-            } else {
-                opts.clock_size
-            },
+            clock_size: fit_clock_size(cols, opts),
             ..opts
         };
 

@@ -20,10 +20,12 @@ const DIGIT_WIDTH: usize = DIGITS[0][0].len();
 
 const COLON: [u8; 5] = [0, 1, 0, 1, 0];
 
+const COLON_WIDTH: usize = 1;
+
 const PIXEL_CHARS_NARROW: [&str; 2] = [" ", "█"];
 const PIXEL_CHARS_WIDE: [&str; 2] = ["  ", "██"];
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ClockSize {
     Text,
     Narrow,
@@ -76,10 +78,12 @@ impl ColonBlink {
 pub struct ClockOptions {
     pub clock_size: ClockSize,
     pub colon_blink: ColonBlink,
+    pub show_seconds: bool,
 }
 
-fn format_time(time: &DateTime<Local>) -> String {
-    time.format("%H:%M:%S").to_string()
+fn format_time(time: &DateTime<Local>, show_seconds: bool) -> String {
+    let fmt = if show_seconds { "%H:%M:%S" } else { "%H:%M" };
+    time.format(fmt).to_string()
 }
 
 fn colon_visible(time: &DateTime<Local>, colon_blink: ColonBlink) -> bool {
@@ -93,8 +97,9 @@ fn render_pixel_time(
     time: &DateTime<Local>,
     pixel_chars: [&str; 2],
     colon_visible: bool,
+    show_seconds: bool,
 ) -> Vec<String> {
-    let time_str = format_time(time);
+    let time_str = format_time(time, show_seconds);
     let mut lines = Vec::with_capacity(DIGIT_HEIGHT);
 
     for row in 0..DIGIT_HEIGHT {
@@ -125,8 +130,8 @@ fn render_pixel_time(
     lines
 }
 
-fn render_text_time(time: &DateTime<Local>, colon_visible: bool) -> String {
-    let text = format_time(time);
+fn render_text_time(time: &DateTime<Local>, colon_visible: bool, show_seconds: bool) -> String {
+    let text = format_time(time, show_seconds);
     if colon_visible {
         text
     } else {
@@ -134,16 +139,35 @@ fn render_text_time(time: &DateTime<Local>, colon_visible: bool) -> String {
     }
 }
 
-fn render_time(time: &DateTime<Local>, size: ClockSize, colon_visible: bool) -> Vec<String> {
+fn render_time(
+    time: &DateTime<Local>,
+    size: ClockSize,
+    colon_visible: bool,
+    show_seconds: bool,
+) -> Vec<String> {
     match size.pixel_chars() {
-        Some(pixel_chars) => render_pixel_time(time, pixel_chars, colon_visible),
-        None => vec![render_text_time(time, colon_visible)],
+        Some(pixel_chars) => render_pixel_time(time, pixel_chars, colon_visible, show_seconds),
+        None => vec![render_text_time(time, colon_visible, show_seconds)],
+    }
+}
+
+// TODO: Find a better way to calculate the width
+pub fn clock_size_width(size: ClockSize, show_seconds: bool) -> usize {
+    let (num_digits, num_colons) = if show_seconds { (6, 2) } else { (4, 1) }; // HH:MM:SS or HH:MM
+    match size.pixel_chars() {
+        Some(pixel_chars) => {
+            let pixel_width = pixel_chars[1].chars().count();
+            num_digits * (DIGIT_WIDTH * pixel_width)
+                + num_colons * (COLON_WIDTH * pixel_width)
+                + (num_digits + num_colons - 1) * pixel_chars[0].chars().count() // spaces between characters
+        }
+        None => num_digits + num_colons, // text mode, each character is 1 column wide
     }
 }
 
 pub fn render_clock(time: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
     let colon_visible = colon_visible(time, opts.colon_blink);
-    let lines = render_time(time, opts.clock_size, colon_visible);
+    let lines = render_time(time, opts.clock_size, colon_visible, opts.show_seconds);
 
     lines
 }
