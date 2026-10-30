@@ -30,10 +30,10 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
         let (cols, _) = terminal::size()?;
         let frame_opts = ClockOptions {
             // FIX: Hardcoded threshold for switching to narrow mode
-            size: if cols < 54 {
+            clock_size: if cols < 54 {
                 ClockSize::Narrow
             } else {
-                opts.size
+                opts.clock_size
             },
             ..opts
         };
@@ -41,8 +41,9 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
         let rendered_clock = render_clock(&now, frame_opts);
         draw_centered(&mut out, &rendered_clock)?;
 
-        let ms = u64::from(now.timestamp_subsec_millis() % 1000);
-        if event::poll(Duration::from_millis(1000 - ms))? {
+        let frame_interval = opts.colon_blink.frame_ms();
+        let ms = u64::from(now.timestamp_subsec_millis()) % frame_interval;
+        if event::poll(Duration::from_millis(frame_interval - ms))? {
             match event::read()? {
                 Event::Key(key) if key.kind == KeyEventKind::Press => {
                     let ctrl_c = key.code == KeyCode::Char('c')
@@ -61,10 +62,10 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    let opts = ClockOptions {
-        size: ClockSize::Wide,
-        show_date: true,
-    };
+    let opts = ClockOptions::default();
+
+    // let mut opts = ClockOptions::default();
+    // opts.blink_interval = ColonBlink::Second;
 
     if std::env::args().any(|arg| arg == "--print") {
         print_clock(opts);

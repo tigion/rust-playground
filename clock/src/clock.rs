@@ -39,10 +39,42 @@ impl ClockSize {
     }
 }
 
+/// Blink behavior of the colon separators.
+#[derive(Clone, Copy, Default)]
+pub enum ColonBlink {
+    /// The colon is always visible.
+    Off,
+    /// 0.5 s visible, 0.5 s hidden.
+    #[default]
+    HalfSecond,
+    /// 1 s visible, 1 s hidden.
+    Second,
+}
+
+impl ColonBlink {
+    /// Duration of one visible/hidden state in milliseconds, `None` if the colon does not blink.
+    pub const fn state_ms(self) -> Option<u64> {
+        match self {
+            ColonBlink::Off => None,
+            ColonBlink::HalfSecond => Some(500),
+            ColonBlink::Second => Some(1000),
+        }
+    }
+
+    /// How often the display must be redrawn, in milliseconds.
+    pub const fn frame_ms(self) -> u64 {
+        match self {
+            ColonBlink::Off | ColonBlink::Second => 1000,
+            ColonBlink::HalfSecond => 500,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 pub struct ClockOptions {
-    pub size: ClockSize,
+    pub clock_size: ClockSize,
     pub show_date: bool,
+    pub colon_blink: ColonBlink,
 }
 
 fn format_time(time: &DateTime<Local>) -> String {
@@ -58,7 +90,14 @@ fn center_line(text: &str, width: usize) -> String {
     format!("{}{text}", " ".repeat(padding))
 }
 
-pub fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2]) -> Vec<String> {
+fn colon_visible(time: &DateTime<Local>, colon_blink: ColonBlink) -> bool {
+    match colon_blink.state_ms() {
+        Some(value) => (time.timestamp_millis() / value as i64) % 2 == 0,
+        None => true,
+    }
+}
+
+fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2], colon_visible: bool) -> Vec<String> {
     let time_str = format_time(time);
     let mut lines = Vec::with_capacity(DIGIT_HEIGHT);
 
@@ -77,7 +116,8 @@ pub fn render_time(time: &DateTime<Local>, pixel_chars: [&str; 2]) -> Vec<String
                     line.push_str(pixel_chars[DIGITS[digit as usize][row][col] as usize]);
                 }
             } else if ch == ':' {
-                line.push_str(pixel_chars[COLON[row] as usize]);
+                let idx = if colon_visible { COLON[row] } else { 0 };
+                line.push_str(pixel_chars[idx as usize]);
             } else {
                 unreachable!("unsupported character in time string: {ch:?}");
             }
@@ -98,14 +138,16 @@ fn lines_width(lines: &[String]) -> usize {
     lines.iter().map(|l| l.chars().count()).max().unwrap_or(0)
 }
 
-pub fn render_clock(now: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
-    let pixel_chars = opts.size.pixel_chars();
+pub fn render_clock(time: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
+    let pixel_chars = opts.clock_size.pixel_chars();
+    let colon_visible = colon_visible(time, opts.colon_blink);
 
-    let mut lines = render_time(&now, pixel_chars);
+    let mut lines = render_time(time, pixel_chars, colon_visible);
 
     if opts.show_date {
+        let width = lines_width(&lines);
         lines.push(String::new());
-        lines.push(render_date(&now, lines_width(&lines)));
+        lines.push(render_date(time, width));
     }
 
     lines
