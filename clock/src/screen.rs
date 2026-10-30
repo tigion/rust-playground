@@ -29,14 +29,15 @@ impl Drop for TerminalGuard {
 pub fn draw_centered(out: &mut impl Write, lines: &[String]) -> io::Result<()> {
     let (cols, rows) = terminal::size()?;
 
-    let height = lines.len() as u16;
-    let width = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0) as u16;
+    let height = lines.len() as u16; // <= rows, fits into u16
+    let width = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0) as u16; // <= cols, fits into u16
 
     let x = cols.saturating_sub(width) / 2;
     let y = rows.saturating_sub(height) / 2;
 
-    for (i, line) in lines.iter().enumerate() {
-        queue!(out, MoveTo(x, y + i as u16), Print(line))?;
+    for (row, line) in (y..).zip(lines) {
+        queue!(out, MoveTo(x, row), Print(line))?;
     }
+
     out.flush()
 }
