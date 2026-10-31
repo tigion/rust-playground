@@ -2,6 +2,7 @@
 
 use chrono::{DateTime, Local};
 
+/// 5x3 pixel representations of the digits 0–9.
 const DIGITS: [[[u8; 3]; 5]; 10] = [
     [[1, 1, 1], [1, 0, 1], [1, 0, 1], [1, 0, 1], [1, 1, 1]], // 0
     [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]], // 1
@@ -18,22 +19,35 @@ const DIGITS: [[[u8; 3]; 5]; 10] = [
 const DIGIT_HEIGHT: usize = DIGITS[0].len();
 const DIGIT_WIDTH: usize = DIGITS[0][0].len();
 
+/// 5-row pixel representation of the colon.
 const COLON: [u8; 5] = [0, 1, 0, 1, 0];
 
 const COLON_WIDTH: usize = 1;
 
+/// Characters used to render narrow pixels: one character per pixel.
 const PIXEL_CHARS_NARROW: [&str; 2] = [" ", "█"];
+
+/// Characters used to render wide pixels: two characters per pixel.
 const PIXEL_CHARS_WIDE: [&str; 2] = ["  ", "██"];
 
+/// Defines the size of the clock representation.
 #[derive(Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ClockSize {
+    /// Text-based clock representation.
     Text,
+
+    /// Narrow pixel-based clock representation.
     Narrow,
+
+    /// Wide pixel-based clock representation (default).
     #[default]
     Wide,
 }
 
 impl ClockSize {
+    /// Returns the pixel characters for the selected clock size.
+    ///
+    /// Returns `None` for text-based clocks.
     pub fn pixel_chars(self) -> Option<[&'static str; 2]> {
         match self {
             ClockSize::Text => None,
@@ -43,15 +57,17 @@ impl ClockSize {
     }
 }
 
-/// Blink behavior of the colon separators.
+/// Defines the blinking behavior of the clock's colon.
 #[derive(Clone, Copy, Default)]
 pub enum ColonBlink {
     /// The colon is always visible.
     Off,
-    /// 0.5 s visible, 0.5 s hidden.
+
+    /// 0.5 seconds visible, 0.5 seconds hidden.
     #[default]
     HalfSecond,
-    /// 1 s visible, 1 s hidden.
+
+    /// 1 second visible, 1 second hidden.
     Second,
 }
 
@@ -74,18 +90,26 @@ impl ColonBlink {
     }
 }
 
+/// Configuration options for rendering a clock.
 #[derive(Clone, Copy, Default)]
 pub struct ClockOptions {
+    /// The size of the clock representation.
     pub clock_size: ClockSize,
+
+    /// The blinking behavior of the clock's colon.
     pub colon_blink: ColonBlink,
+
+    /// Whether seconds are displayed.
     pub show_seconds: bool,
 }
 
+/// Formats the given time as HH:MM or HH:MM:SS.
 fn format_time(time: &DateTime<Local>, show_seconds: bool) -> String {
     let fmt = if show_seconds { "%H:%M:%S" } else { "%H:%M" };
     time.format(fmt).to_string()
 }
 
+/// Determines whether the colon should be visible based on the blink mode.
 fn colon_visible(time: &DateTime<Local>, colon_blink: ColonBlink) -> bool {
     match colon_blink.state_ms() {
         Some(value) => (time.timestamp_millis() / value as i64) % 2 == 0,
@@ -93,6 +117,9 @@ fn colon_visible(time: &DateTime<Local>, colon_blink: ColonBlink) -> bool {
     }
 }
 
+/// Renders the given time using a pixel-based representation.
+///
+/// Each digit and colon is converted into a multi-line pixel
 fn render_pixel_time(
     time: &DateTime<Local>,
     pixel_chars: [&str; 2],
@@ -130,8 +157,12 @@ fn render_pixel_time(
     lines
 }
 
+/// Renders the given time as a single-line text representation.
+///
+/// Replaces hidden colons with spaces.
 fn render_text_time(time: &DateTime<Local>, colon_visible: bool, show_seconds: bool) -> String {
     let text = format_time(time, show_seconds);
+
     if colon_visible {
         text
     } else {
@@ -151,20 +182,44 @@ fn render_time(
     }
 }
 
-// TODO: Find a better way to calculate the width
+/// Calculates the width of the clock.
+///
+/// # Arguments
+///
+/// * `size` - The clock size (Text, Narrow, or Wide).
+/// * `show_seconds` - Whether seconds are displayed.
+///
+/// # Returns
+///
+/// The width of the clock in characters.
 pub fn clock_size_width(size: ClockSize, show_seconds: bool) -> usize {
-    let (num_digits, num_colons) = if show_seconds { (6, 2) } else { (4, 1) }; // HH:MM:SS or HH:MM
+    // HH:MM:SS or HH:MM
+    let (num_digits, num_colons) = if show_seconds { (6, 2) } else { (4, 1) };
+
     match size.pixel_chars() {
+        // Pixel clock: H_H_:_M_M_:_S_S or H_H_:_M_M
         Some(pixel_chars) => {
             let pixel_width = pixel_chars[1].chars().count();
+
             num_digits * (DIGIT_WIDTH * pixel_width)
                 + num_colons * (COLON_WIDTH * pixel_width)
-                + (num_digits + num_colons - 1) * pixel_chars[0].chars().count() // spaces between characters
+                + (num_digits + num_colons - 1) * pixel_width
         }
-        None => num_digits + num_colons, // text mode, each character is 1 column wide
+        // Text clock: HH:MM:SS or HH:MM
+        None => num_digits + num_colons,
     }
 }
 
+/// Renders a given time as a clock.
+///
+/// # Arguments
+///
+/// * `time` - The time to display.
+/// * `opts` - The clock rendering options.
+///
+/// # Returns
+///
+/// A vector of strings representing the rendered clock.
 pub fn render_clock(time: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
     let colon_visible = colon_visible(time, opts.colon_blink);
 
