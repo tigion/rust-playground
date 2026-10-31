@@ -70,12 +70,12 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    let opts = ClockOptions::default();
+    let mut opts = ClockOptions::default();
 
-    // let mut opts = ClockOptions::default();
     // opts.blink_interval = ColonBlink::Second;
 
     if std::env::args().any(|arg| arg == "--print") {
+        opts.colon_blink = clock::ColonBlink::Off;
         print_clock(opts);
     } else {
         run_clock(opts)?;
