@@ -167,7 +167,6 @@ pub fn clock_size_width(size: ClockSize, show_seconds: bool) -> usize {
 
 pub fn render_clock(time: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
     let colon_visible = colon_visible(time, opts.colon_blink);
-    let lines = render_time(time, opts.clock_size, colon_visible, opts.show_seconds);
 
-    lines
+    render_time(time, opts.clock_size, colon_visible, opts.show_seconds)
 }
