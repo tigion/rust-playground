@@ -51,13 +51,13 @@ fn lines_width(lines: &[String]) -> usize {
 ///
 /// * `out` - The output stream to draw to.
 /// * `lines` - The lines to display.
+/// * `size` - The terminal size in columns and rows.
 ///
 /// # Errors
 ///
-/// Returns an error if the terminal size cannot be retrieved or writing to the
-/// output stream fails.
-pub fn draw_centered(out: &mut impl Write, lines: &[String]) -> io::Result<()> {
-    let (cols, rows) = terminal::size()?;
+/// Returns an error if writing to the output stream fails.
+pub fn draw_centered(out: &mut impl Write, lines: &[String], size: (u16, u16)) -> io::Result<()> {
+    let (cols, rows) = size;
 
     let height = lines.len() as u16; // <= rows, fits into u16
     let width = lines_width(lines) as u16; // <= cols, fits into u16

@@ -55,14 +55,14 @@ fn run_clock(opts: ClockOptions) -> io::Result<()> {
     loop {
         let now = Local::now();
 
-        let (cols, _) = terminal::size()?;
+        let (cols, rows) = terminal::size()?;
         let frame_opts = ClockOptions {
             clock_size: fit_clock_size(cols, opts),
             ..opts
         };
 
         let rendered_clock = render_clock(&now, frame_opts);
-        draw_centered(&mut out, &rendered_clock)?;
+        draw_centered(&mut out, &rendered_clock, (cols, rows))?;
 
         // Align the next frame with the blink interval.
         let frame_interval = opts.colon_blink.frame_ms();
