@@ -114,3 +114,36 @@ fn main() -> io::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fit_clock_size_to_available_width() {
+        let mut opts = ClockOptions {
+            clock_size: ClockSize::Wide,
+            show_seconds: true,
+            ..Default::default()
+        };
+
+        assert_eq!(fit_clock_size(26, opts), ClockSize::Text);
+        assert_eq!(fit_clock_size(27, opts), ClockSize::Narrow);
+        assert_eq!(fit_clock_size(53, opts), ClockSize::Narrow);
+        assert_eq!(fit_clock_size(54, opts), ClockSize::Wide);
+
+        opts.clock_size = ClockSize::Narrow;
+
+        assert_eq!(fit_clock_size(26, opts), ClockSize::Text);
+        assert_eq!(fit_clock_size(27, opts), ClockSize::Narrow);
+        assert_eq!(fit_clock_size(53, opts), ClockSize::Narrow);
+        assert_eq!(fit_clock_size(54, opts), ClockSize::Narrow);
+
+        opts.clock_size = ClockSize::Text;
+
+        assert_eq!(fit_clock_size(26, opts), ClockSize::Text);
+        assert_eq!(fit_clock_size(27, opts), ClockSize::Text);
+        assert_eq!(fit_clock_size(53, opts), ClockSize::Text);
+        assert_eq!(fit_clock_size(54, opts), ClockSize::Text);
+    }
+}

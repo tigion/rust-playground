@@ -31,7 +31,7 @@ const PIXEL_CHARS_NARROW: [&str; 2] = [" ", "█"];
 const PIXEL_CHARS_WIDE: [&str; 2] = ["  ", "██"];
 
 /// Defines the size of the clock representation.
-#[derive(Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd, Debug)]
 pub enum ClockSize {
     /// Text-based clock representation.
     Text,
@@ -224,4 +224,123 @@ pub fn render_clock(time: &DateTime<Local>, opts: ClockOptions) -> Vec<String> {
     let colon_visible = colon_visible(time, opts.colon_blink);
 
     render_time(time, opts.clock_size, colon_visible, opts.show_seconds)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    /// Returns a fixed test datetime for consistent testing.
+    ///
+    /// 20.10.2000 12:34:56
+    fn test_datetime() -> DateTime<Local> {
+        Local.with_ymd_and_hms(2000, 10, 20, 12, 34, 56).unwrap()
+    }
+
+    mod colon_blink {
+        use super::*;
+
+        #[test]
+        fn frame_rate_is_in_sync_with_state() {
+            let blink = ColonBlink::Off;
+            assert_eq!(blink.frame_ms(), 1000); // Default frame rate for Off is 1000 ms
+
+            let blink = ColonBlink::HalfSecond;
+            assert_eq!(blink.frame_ms(), blink.state_ms().unwrap());
+
+            let blink = ColonBlink::Second;
+            assert_eq!(blink.frame_ms(), blink.state_ms().unwrap());
+        }
+    }
+
+    mod format_time {
+        use super::*;
+
+        #[test]
+        fn with_seconds() {
+            let time = test_datetime();
+
+            assert_eq!(format_time(&time, true), "12:34:56");
+        }
+
+        #[test]
+        fn without_seconds() {
+            let time = test_datetime();
+
+            assert_eq!(format_time(&time, false), "12:34");
+        }
+
+        #[test]
+        fn with_leading_zeros() {
+            let time = Local.with_ymd_and_hms(2000, 10, 20, 1, 1, 1).unwrap();
+            assert_eq!(format_time(&time, true), "01:01:01");
+            assert_eq!(format_time(&time, false), "01:01");
+        }
+    }
+
+    mod colon_visible {
+        use super::*;
+        use chrono::Duration;
+
+        fn assert_visible_and_hidden(blink: ColonBlink) {
+            let time_visible = test_datetime();
+            let time_hidden =
+                time_visible + Duration::milliseconds(blink.state_ms().unwrap() as i64);
+
+            assert!(colon_visible(&time_visible, blink));
+            assert!(!colon_visible(&time_hidden, blink));
+        }
+
+        #[test]
+        fn off() {
+            let time = test_datetime();
+
+            assert!(colon_visible(&time, ColonBlink::Off));
+        }
+
+        #[test]
+        fn half_second() {
+            assert_visible_and_hidden(ColonBlink::HalfSecond);
+        }
+
+        #[test]
+        fn second() {
+            assert_visible_and_hidden(ColonBlink::Second);
+        }
+    }
+
+    mod clock_size_width {
+        use super::*;
+
+        #[test]
+        fn text_with_seconds() {
+            assert_eq!(clock_size_width(ClockSize::Text, true), 8); // HH:MM:SS
+        }
+
+        #[test]
+        fn text_without_seconds() {
+            assert_eq!(clock_size_width(ClockSize::Text, false), 5); // HH:MM
+        }
+
+        #[test]
+        fn narrow_with_seconds() {
+            assert_eq!(clock_size_width(ClockSize::Narrow, true), 27); // H_H_:_M_M_:_S_S (6 * 3 + 9)
+        }
+
+        #[test]
+        fn narrow_without_seconds() {
+            assert_eq!(clock_size_width(ClockSize::Narrow, false), 17); // H_H_:_M_M (4 * 3 + 5)
+        }
+
+        #[test]
+        fn wide_with_seconds() {
+            assert_eq!(clock_size_width(ClockSize::Wide, true), 54); // H_H_:_M_M_:_S_S (2x narrow)
+        }
+
+        #[test]
+        fn wide_without_seconds() {
+            assert_eq!(clock_size_width(ClockSize::Wide, false), 34); // H_H_:_M_M (2x narrow)
+        }
+    }
 }

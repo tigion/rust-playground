@@ -71,3 +71,45 @@ pub fn draw_centered(out: &mut impl Write, lines: &[String], size: (u16, u16)) -
 
     out.flush()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod lines_width {
+        use super::*;
+
+        #[test]
+        fn multiple_lines_returns_the_longest_width() {
+            // let lines: Vec<String> = vec![
+            let lines: [String; 3] = [
+                "This is a line.".into(),        // 15 characters
+                "This is a longer line.".into(), // 22 characters
+                "This is a short line.".into(),  // 20 characters
+            ];
+            assert_eq!(lines_width(&lines), 22);
+        }
+
+        #[test]
+        fn single_line_returns_its_width() {
+            let lines: [String; 1] = [
+                "This is a line.".into(), // 15 characters
+            ];
+            assert_eq!(lines_width(&lines), 15);
+        }
+
+        #[test]
+        fn empty_lines_returns_zero() {
+            let lines: [String; 1] = [
+                "".into(), // 0 characters
+            ];
+            assert_eq!(lines_width(&lines), 0);
+        }
+
+        #[test]
+        fn no_lines_returns_zero() {
+            let lines: [String; 0] = [];
+            assert_eq!(lines_width(&lines), 0);
+        }
+    }
+}
